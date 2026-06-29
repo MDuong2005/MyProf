@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mai Xuan Duong - Portfolio</title>
+    <!-- Nhúng Tailwind CSS qua CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Nhúng Font chữ phong cách Pixel/Retro -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <!-- Nhúng thư viện gõ chữ Typed.js -->
+    <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
+    
+    <style>
+    /* Cấu hình font chữ Retro */
+    .font-pixel { font-family: 'VT323', monospace; font-size: 1.35rem; }
+    .font-title { font-family: 'Press Start 2P', cursive; font-size: 0.8rem; }
+
+    /* Hiệu ứng viền Neon nhấp nháy liên tục không dừng */
+    @keyframes pulse-glow {
+        0%, 100% {
+            border-color: rgba(6, 182, 212, 0.4);
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.3), inset 0 0 15px rgba(6, 182, 212, 0.1);
+        }
+        50% {
+            border-color: rgba(6, 182, 212, 0.9);
+            box-shadow: 0 0 45px rgba(6, 182, 212, 0.6), inset 0 0 25px rgba(6, 182, 212, 0.2);
+        }
+    }
+    .animate-neon { animation: pulse-glow 2s ease-in-out infinite; }
+</style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center overflow-hidden bg-black bg-cover bg-center bg-no-repeat" style="background-image: url('assets/ga.gif');">
+
+    <!-- KHUNG ĐIỆN THOẠI CHÍNH Ở GIỮA (MAIN CARD) -->
+    <div class="animate-neon w-[90%] max-w-[420px] h-[90vh] bg-black/75 border-2 rounded-3xl p-6 flex flex-col justify-between backdrop-blur-md text-cyan-200 font-pixel">
+        
+        <!-- TOP: Avatar & Name -->
+        <div class="text-center flex flex-col items-center">
+            <div class="w-20 h-20 rounded-full border-2 border-pink-500 p-1 mb-3 shadow-[0_0_15px_rgba(236,72,153,0.5)]">
+                <img src="assets/coderavt.png" alt="Avatar" class="w-full h-full rounded-full object-cover">
+            </div>
+            <h1 class="text-3xl font-bold tracking-wide text-white">Mai Xuan Duong</h1>
+            <p class="text-pink-400 font-title mt-1 text-[10px]">Java Dev / BA Intern</p>
+        </div>
+
+        <!-- MIDDLE: Khung Code Java Tự Chạy (Terminal Card) -->
+        <div class="bg-gray-950/90 border border-purple-500/40 rounded-xl p-4 my-3 flex-1 overflow-hidden font-mono text-xs leading-relaxed text-green-400 shadow-inner text-left">
+            <div class="flex space-x-1.5 mb-2 border-b border-gray-800 pb-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                <span class="text-[10px] text-gray-500 pl-2">MaiXuanDuong.java</span>
+            </div>
+            <!-- Đây là nơi chữ tự gõ sẽ xuất hiện -->
+            <span id="typing-code"></span>
+        </div>
+
+        <!-- BOTTOM: Music Player & Contact Buttons -->
+        <div class="space-y-4">
+            <!-- Music Player Box -->
+            <div class="bg-purple-950/30 border border-purple-500/20 rounded-xl p-3 flex flex-col justify-between space-y-2 text-left select-none">
+                <!-- Thẻ audio liên kết trực tiếp tới file nhạc của em -->
+                <audio id="audio-player" src="assets/noitachoem.mp3"></audio>
+
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <!-- Ảnh đĩa nhạc lấy theo ảnh avatar coderavt.png -->
+                        <img id="music-disk" src="assets/laptop.jpg" alt="Music Cover" class="w-10 h-10 rounded-full object-cover border border-pink-500/50">
+                        <div>
+                            <p class="text-white text-sm font-semibold tracking-wide">Noi Ta Cho Em...</p>
+                            <p id="music-time" class="text-gray-400 text-xs font-mono">00:00 / 00:00</p>
+                        </div>
+                    </div>
+
+                    <!-- Nút Play/Pause & Sóng nhạc -->
+                    <div class="flex items-center space-x-3">
+                        <!-- Sóng nhạc Động giả lập -->
+                        <div id="wave-container" class="flex items-end space-x-0.5 h-4 opacity-0 transition-opacity duration-300">
+                            <style>
+                                @keyframes bounce-bar { 0%, 100% { height: 4px; } 50% { height: 16px; } }
+                                .animate-bar { animation: bounce-bar 0.6s ease-in-out infinite; }
+                            </style>
+                            <div class="w-0.5 bg-pink-500 animate-bar" style="animation-delay: 0.1s"></div>
+                            <div class="w-0.5 bg-purple-500 animate-bar" style="animation-delay: 0.3s"></div>
+                            <div class="w-0.5 bg-pink-500 animate-bar" style="animation-delay: 0.5s"></div>
+                        </div>
+                        
+                        <!-- Nút bấm Play/Pause -->
+                        <button id="play-btn" class="w-8 h-8 rounded-full bg-pink-600/20 border border-pink-500 flex items-center justify-center text-pink-400 hover:bg-pink-600/40 transition-all text-[10px] font-title">
+                            ▶
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Thanh Progress Bar hiển thị tiến độ bài hát -->
+                <div id="progress-container" class="w-full bg-gray-900 rounded-full h-1.5 overflow-hidden border border-purple-500/20 cursor-pointer">
+                    <div id="progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all duration-100" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- CỤM NÚT LIÊN HỆ: GITHUB, ZALO & GMAIL -->
+            <div class="space-y-3">
+                <!-- Hàng 1: Chia đôi cho GitHub và Zalo -->
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Nút GitHub -->
+                    <a href="https://github.com/MDuong2005" 
+                       target="_blank" 
+                       class="bg-gray-900/80 hover:bg-gray-800 border border-purple-500/30 text-white font-title text-center py-2.5 rounded-xl block transition-all duration-300 transform hover:scale-[1.03] shadow-[0_0_10px_rgba(147,51,234,0.2)] text-[11px] flex items-center justify-center space-x-2">
+                        <span>🐙</span>
+                        <span>GITHUB</span>
+                    </a>
+
+                    <!-- Nút Zalo -->
+                    <a href="https://zalo.me/0979705956" 
+                       target="_blank" 
+                       class="bg-blue-600/20 hover:bg-blue-600/40 border border-blue-500/40 text-blue-300 font-title text-center py-2.5 rounded-xl block transition-all duration-300 transform hover:scale-[1.03] shadow-[0_0_10px_rgba(59,130,246,0.2)] text-[11px] flex items-center justify-center space-x-2">
+                        <span>💬</span>
+                        <span>ZALO</span>
+                    </a>
+                </div>
+
+                <!-- Hàng 2: Nút Gmail chính full width -->
+                <a href="https://mail.google.com/mail/?view=cm&fs=1&to=maid88391@gmail.com&su=Thư%20mời%20phỏng%20vấn%20-%20Vị%20trí%20Java/BA%20Intern&body=Chào%20Dương,%0A%0ABên%20anh/chị%20đã%20xem%20qua%20Portfolio%20độc%20đáo%20của%20em%20và%20rất%20ấn%20tượng.%20Anh/chị%20muốn%20mời%20em%20tham%20gia%20một%20buổi%20trao%20đổi%20phỏng%20vấn..." 
+                   target="_blank" 
+                   class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-title text-center py-3 rounded-xl block transition-all duration-300 transform hover:scale-[1.03] shadow-[0_0_15px_rgba(147,51,234,0.4)] text-[12px]">
+                    <span>GMAIL</span>
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Nhúng file xử lý logic JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
