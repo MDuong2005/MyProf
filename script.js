@@ -1,26 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
     // 1. HIỆU ỨNG CHỮ TỰ GÕ (TYPED.JS) CHO CODE JAVA
-    new Typed('#typing-code', {
+    new Typed('#typing-title', {
         strings: [
-            `class MaiXuanDuong {<br>` +
-            `&nbsp;&nbsp;&nbsp;&nbsp;String role = "Java Dev / BA Intern";<br>` +
-            `&nbsp;&nbsp;&nbsp;&nbsp;String[] skills = {<br>` +
-            `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Java Servlet", "Spring Boot",<br>` +
-            `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"SQL Server", "Requirement Analysis"<br>` +
-            `&nbsp;&nbsp;&nbsp;&nbsp;};<br>` +
-            `&nbsp;&nbsp;&nbsp;&nbsp;String[] qualityTools = {"JUnit", "SonarQube"};<br>` +
-            `&nbsp;&nbsp;&nbsp;&nbsp;String motto = "Bridge Business & Code";<br>` +
-            `&nbsp;&nbsp;&nbsp;&nbsp;String DOB = "08-01-2005";<br><br>` +
-            `&nbsp;&nbsp;&nbsp;&nbsp;public MaiXuanDuong() {<br>` +
-            `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;this.showStatus("Ready for coding & analyzing...");<br>` +
-            `&nbsp;&nbsp;&nbsp;&nbsp;}<br>` +
-            `}`
+            `> Java Dev / BA Intern`
         ],
-        typeSpeed: 30,        // Tốc độ gõ chữ (ms)
+        typeSpeed: 50,        // Tốc độ gõ chữ (ms)
         backSpeed: 0,         
         cursorChar: '▋',      
         loop: false,          
-        contentType: 'html'   // Nhận diện thẻ <br> và &nbsp; để xuống dòng và thụt lề
+        contentType: 'html'
     });
 
     // 2. LOGIC TƯƠNG TÁC CHO MÁY NGHE NHẠC (MUSIC PLAYER)
