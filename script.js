@@ -2,12 +2,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. HIỆU ỨNG CHỮ TỰ GÕ (TYPED.JS) CHO CODE JAVA
     new Typed('#typing-title', {
         strings: [
-            `> Java Dev / BA Intern`
+            `> Java Dev / BA Intern`,
+            `> Problem Solver`,
+            `> Bridging Business & Code`
         ],
         typeSpeed: 50,        // Tốc độ gõ chữ (ms)
-        backSpeed: 0,         
+        backSpeed: 30,        // Tốc độ xóa chữ (ms)
+        backDelay: 1500,      // Thời gian chờ trước khi xóa
         cursorChar: '▋',      
-        loop: false,          
+        loop: true,          
         contentType: 'html'
     });
 
@@ -30,6 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Xử lý sự kiện khi click nút Play/Pause
     playBtn.addEventListener('click', () => {
+        // Tắt hiệu ứng nhấp nháy khi người dùng đã tương tác
+        playBtn.classList.remove('animate-pulse');
+
         if (audio.paused) {
             audio.play().catch(err => console.log("Trình duyệt chặn tự động phát:", err));
             playBtn.innerText = '⏸';
