@@ -3,20 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mai Xuan Duong - Portfolio</title>
+    <title>Mai Xuan Duong - 3D Cyber Portfolio</title>
     <!-- Nhúng Tailwind CSS qua CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Nhúng Font chữ phong cách Pixel/Retro -->
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
     <!-- Nhúng thư viện gõ chữ Typed.js -->
     <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
+    <!-- Nhúng thư viện đồ họa 3D Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <style>
     /* Cấu hình font chữ Retro */
     .font-pixel { font-family: 'VT323', monospace; font-size: 1.35rem; }
     .font-title { font-family: 'Press Start 2P', cursive; font-size: 0.8rem; }
 
-    /* Hiệu ứng viền Neon nhấp nháy liên tục không dừng */
+    /* Hiệu ứng viền Neon nhấp nháy liên tục */
     @keyframes pulse-glow {
         0%, 100% {
             border-color: rgba(6, 182, 212, 0.4);
@@ -27,151 +29,230 @@
             box-shadow: 0 0 45px rgba(6, 182, 212, 0.6), inset 0 0 25px rgba(6, 182, 212, 0.2);
         }
     }
-    .animate-neon { animation: pulse-glow 2s ease-in-out infinite; }
+    .animate-neon { animation: pulse-glow 2.5s ease-in-out infinite; }
 
-    .animate-neon { animation: pulse-glow 2s ease-in-out infinite; }
+    /* 3D Transform Utilities */
+    .transform-style-3d {
+        transform-style: preserve-3d;
+        -webkit-transform-style: preserve-3d;
+    }
+    
+    /* Dynamic 3D Glare Light */
+    #card-glare {
+        background: radial-gradient(circle 320px at var(--glare-x, 50%) var(--glare-y, 50%), rgba(255, 255, 255, 0.18), rgba(6, 182, 212, 0.12) 35%, transparent 75%);
+    }
 
-</style>
+    /* Bento 3D cards hover effect */
+    .bento-3d-card {
+        transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
+        transform: translateZ(18px);
+        transform-style: preserve-3d;
+    }
+    .bento-3d-card:hover {
+        transform: translateZ(32px) scale(1.02);
+    }
+
+    /* Custom scrollbar for retro styling */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #000; }
+    ::-webkit-scrollbar-thumb { background: #06b6d4; border-radius: 3px; }
+    </style>
 </head>
-<body class="min-h-screen w-full flex items-center justify-center bg-black bg-cover bg-center bg-no-repeat py-6 md:py-8" style="background-image: url('assets/ga.gif');">
+<body class="min-h-screen w-full flex flex-col items-center justify-center bg-black bg-cover bg-center bg-no-repeat overflow-x-hidden relative" style="background-image: url('assets/ga.gif');">
 
-    <!-- KHUNG ĐIỆN THOẠI CHÍNH Ở GIỮA (MAIN CARD) -->
-<div class="animate-neon w-[90%] max-w-[420px] h-auto min-h-[95vh] bg-black/75 border-2 rounded-3xl p-5 md:p-6 py-6 md:py-8 flex flex-col justify-between backdrop-blur-md text-cyan-200 font-pixel">
+    <!-- CANVAS ĐỒ HỌA 3D NỀN TƯƠNG TÁC (THREE.JS) -->
+    <canvas id="bg-3d" class="fixed inset-0 pointer-events-none z-0"></canvas>
+    
+    <!-- Lớp phủ tạo chiều sâu tối khí quyển -->
+    <div class="fixed inset-0 bg-black/60 pointer-events-none z-0 backdrop-brightness-75"></div>
+
+    <!-- THANH ĐIỀU KHIỂN & TELEMETRY 3D (HUD) -->
+    <header id="hud-3d" class="fixed top-3 z-40 flex items-center gap-2 bg-black/85 border border-cyan-500/40 rounded-full px-3 py-1.5 text-[10px] font-mono text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.4)] backdrop-blur-md select-none">
+        <span class="flex h-2 w-2 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+        </span>
+        <span class="font-bold tracking-wider text-[9px] md:text-[10px] text-cyan-300">3D MATRIX</span>
+        <span id="telemetry-tilt" class="text-gray-400 border-l border-cyan-500/30 pl-2 hidden sm:inline text-[9px]">PITCH: 0° | ROLL: 0°</span>
+        <button id="toggle-3d-mode" class="ml-1 bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-200 border border-cyan-400/50 rounded-full px-2 py-0.5 text-[8px] md:text-[9px] transition-all cursor-pointer font-bold" title="Chuyển đổi giao diện 3D không gian">
+            🪐 CYBER GRID
+        </button>
+        <button id="toggle-3d-view" class="bg-purple-500/20 hover:bg-purple-500/40 text-pink-300 border border-pink-400/50 rounded-full px-2 py-0.5 text-[8px] md:text-[9px] transition-all cursor-pointer font-bold" title="Bật / Tắt hiệu ứng nghiêng Parallax 3D">
+            TILT: ON
+        </button>
+    </header>
+
+    <!-- WRAPPER 3D PERSPECTIVE CHO CARD CHÍNH -->
+    <main id="main-card-wrapper" class="relative z-10 w-full flex items-center justify-center py-12 md:py-16" style="perspective: 1200px;">
         
-        <!-- TOP: Avatar & Name -->
-        <div class="text-center flex flex-col items-center">
-            <div class="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-pink-500 p-1 mb-2 md:mb-3 shadow-[0_0_15px_rgba(236,72,153,0.5)]">
-                <img src="assets/coderavt.png" alt="Avatar" class="w-full h-full rounded-full object-cover">
-            </div>
-            <h1 class="text-2xl md:text-3xl font-bold tracking-wide text-white">Mai Xuan Duong</h1>
-            <div class="h-4 mt-2 flex items-center justify-center text-pink-400 font-title text-[10px] md:text-[11px]">
-                <span id="typing-title"></span>
-            </div>
-        </div>
-
-        <!-- MIDDLE: Bento Grid (Kỹ năng & Công cụ) -->
-        <div class="my-4 grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 content-start">
-            <!-- Bento 1: Tech Stack -->
-            <div class="md:col-span-2 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm hover:border-cyan-400/60 hover:bg-cyan-900/10 transition-colors duration-300 group shadow-lg">
-                <h2 class="text-[10px] text-cyan-500 font-bold mb-3 tracking-widest font-mono border-b border-white/5 pb-1 group-hover:border-cyan-500/30">TECH STACK</h2>
-                <div class="flex flex-wrap gap-2">
-                    <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-orange-500/50 transition-colors">☕ Java/OOP</span>
-                    <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-green-500/50 transition-colors">🍃 Spring Boot</span>
-                    <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-cyan-400/50 transition-colors">⚙️ Servlet/JSP</span>
-                    <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-pink-500/50 transition-colors">🔌 REST API</span>
-                    <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-yellow-500/50 transition-colors">🐍 Python</span>
-                    <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-blue-500/50 transition-colors">⚡ C/C++</span>
-                    <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-gray-400/50 transition-colors">🗄️ SQL</span>
-                    <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-purple-500/50 transition-colors">🌐 HTML/CSS/Tailwind</span>
-                </div>
-            </div>
-
-            <!-- Bento 2: BA & QA -->
-            <div class="md:col-span-2 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm hover:border-pink-400/60 hover:bg-pink-900/10 transition-colors duration-300 group shadow-lg">
-                <h2 class="text-[10px] text-pink-500 font-bold mb-2 tracking-widest font-mono border-b border-white/5 pb-1 group-hover:border-pink-500/30">BA & QA</h2>
-                <div class="text-[10px] text-gray-300 font-mono leading-relaxed mt-2 space-y-1">
-                    <p><span class="text-pink-400 font-bold">BA Skills:</span> Requirements, Use Case, User Stories, ERD, Activity Diagrams</p>
-                    <p><span class="text-pink-400 font-bold">BA Tools:</span> Draw.io, Figma, Visual Paradigm</p>
-                    <p><span class="text-pink-400 font-bold">QA/Testing:</span> Black/White-box, Test Case, Postman, JUnit, SonarQube</p>
-                </div>
-            </div>
-
-            <!-- Bento 3: Tools & DB -->
-            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm hover:border-green-400/60 hover:bg-green-900/10 transition-colors duration-300 group shadow-lg">
-                <h2 class="text-[10px] text-green-500 font-bold mb-2 tracking-widest font-mono border-b border-white/5 pb-1 group-hover:border-green-500/30">TOOLS & DB</h2>
-                <div class="grid grid-cols-2 gap-2 mt-2">
-                    <div class="text-[10px] text-gray-300 font-mono space-y-1">
-                        <p class="text-green-400 font-bold mb-1 border-b border-green-500/20 inline-block">🛠️ DEV TOOLS</p>
-                        <p>• Git, GitHub</p>
-                        <p>• Maven, Tomcat</p>
-                        <p>• VS Code, NetBeans</p>
-                    </div>
-                    <div class="text-[10px] text-gray-300 font-mono space-y-1">
-                        <p class="text-green-400 font-bold mb-1 border-b border-green-500/20 inline-block">🗄️ DATABASE</p>
-                        <p>• MySQL, SQL Server</p>
-                        <p>• SSMS, Workbench</p>
-                    </div>
-                </div>
-            </div>
+        <!-- KHUNG ĐIỆN THOẠI CHÍNH Ở GIỮA (MAIN CARD WITH 3D DEPTH) -->
+        <div id="main-card" class="animate-neon relative w-[90%] max-w-[420px] h-auto min-h-[95vh] bg-black/85 border-2 rounded-3xl p-5 md:p-6 py-6 md:py-8 flex flex-col justify-between backdrop-blur-md text-cyan-200 font-pixel transform-style-3d shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden">
             
-            <!-- Bento 4: Motto -->
-            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm hover:border-purple-400/60 hover:bg-purple-900/10 transition-colors duration-300 flex items-center justify-center relative overflow-hidden group shadow-lg">
-                <div class="absolute -right-2 -top-2 text-6xl text-white/5 font-serif group-hover:text-purple-500/10 transition-colors">"</div>
-                <p class="text-[11px] md:text-[12px] text-center text-gray-300 font-mono font-bold leading-relaxed italic z-10">
-                    "Bridge Business<br><span class="text-purple-400">&</span> Code"
-                </p>
-            </div>
-        </div>
+            <!-- Lớp phản chiếu ánh sáng 3D Glare tương tác theo chuột -->
+            <div id="card-glare" class="pointer-events-none absolute inset-0 rounded-3xl opacity-0 transition-opacity duration-300 z-50"></div>
+            
+            <!-- Lớp sọc quét CRT Retro Scanlines -->
+            <div class="pointer-events-none absolute inset-0 rounded-3xl bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_4px] z-40 opacity-30"></div>
 
-        <!-- BOTTOM: Music Player & Contact Buttons -->
-        <div class="space-y-4">
-            <!-- Music Player Box -->
-            <div class="bg-purple-950/30 border border-purple-500/20 rounded-xl p-3 flex flex-col justify-between space-y-2 text-left select-none">
-                <!-- Thẻ audio liên kết trực tiếp tới file nhạc của em -->
-                <audio id="audio-player" src="assets/noitachoem.mp3"></audio>
-
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <!-- Ảnh đĩa nhạc lấy theo ảnh avatar coderavt.png -->
-                        <img id="music-disk" src="assets/laptop.jpg" alt="Music Cover" class="w-10 h-10 rounded-full object-cover border border-pink-500/50">
-                        <div>
-                            <p class="text-white text-sm font-semibold tracking-wide">Noi Ta Cho Em...</p>
-                            <p id="music-time" class="text-gray-400 text-xs font-mono">00:00 / 00:00</p>
-                        </div>
+            <!-- TOP: Avatar với Hologram Orbit 3D & Tên -->
+            <div class="text-center flex flex-col items-center transform-style-3d relative z-20" style="transform: translateZ(40px);">
+                <!-- Avatar với vòng quỹ đạo 3D Holographic Orbit -->
+                <div class="relative group cursor-pointer mb-2 md:mb-3">
+                    <div class="absolute -inset-2.5 rounded-full border border-dashed border-cyan-400/60 animate-[spin_10s_linear_infinite] pointer-events-none"></div>
+                    <div class="absolute -inset-3.5 rounded-full border border-pink-500/40 animate-[spin_15s_linear_infinite_reverse] pointer-events-none" style="transform: rotateX(65deg);"></div>
+                    
+                    <div class="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-pink-500 p-1 shadow-[0_0_20px_rgba(236,72,153,0.6)] relative z-10 overflow-hidden bg-black/60 group-hover:scale-105 transition-transform duration-300">
+                        <img src="assets/coderavt.png" alt="Avatar" class="w-full h-full rounded-full object-cover">
                     </div>
+                    
+                    <span class="absolute bottom-0 right-0 z-20 flex h-3.5 w-3.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-black"></span>
+                    </span>
+                </div>
+                
+                <h1 class="text-2xl md:text-3xl font-bold tracking-wide text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]">Mai Xuan Duong</h1>
+                <div class="h-4 mt-2 flex items-center justify-center text-pink-400 font-title text-[10px] md:text-[11px]">
+                    <span id="typing-title"></span>
+                </div>
+            </div>
 
-                    <!-- Nút Play/Pause & Sóng nhạc -->
-                    <div class="flex items-center space-x-3">
-                        <!-- Sóng nhạc Động giả lập -->
-                        <div id="wave-container" class="flex items-end space-x-0.5 h-4 opacity-0 transition-opacity duration-300">
-                            <style>
-                                @keyframes bounce-bar { 0%, 100% { height: 4px; } 50% { height: 16px; } }
-                                .animate-bar { animation: bounce-bar 0.6s ease-in-out infinite; }
-                            </style>
-                            <div class="w-0.5 bg-pink-500 animate-bar" style="animation-delay: 0.1s"></div>
-                            <div class="w-0.5 bg-purple-500 animate-bar" style="animation-delay: 0.3s"></div>
-                            <div class="w-0.5 bg-pink-500 animate-bar" style="animation-delay: 0.5s"></div>
+            <!-- MIDDLE: Bento Grid (Kỹ năng & Công cụ với chiều sâu 3D) -->
+            <div class="my-4 grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 content-start transform-style-3d relative z-20">
+                <!-- Bento 1: Tech Stack -->
+                <div class="bento-3d-card md:col-span-2 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm hover:border-cyan-400/60 hover:bg-cyan-900/10 transition-colors duration-300 group shadow-lg">
+                    <h2 class="text-[10px] text-cyan-500 font-bold mb-3 tracking-widest font-mono border-b border-white/5 pb-1 group-hover:border-cyan-500/30">TECH STACK</h2>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-orange-500/50 transition-colors">☕ Java/OOP</span>
+                        <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-green-500/50 transition-colors">🍃 Spring Boot</span>
+                        <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-cyan-400/50 transition-colors">⚙️ Servlet/JSP</span>
+                        <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-pink-500/50 transition-colors">🔌 REST API</span>
+                        <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-yellow-500/50 transition-colors">🐍 Python</span>
+                        <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-blue-500/50 transition-colors">⚡ C/C++</span>
+                        <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-gray-400/50 transition-colors">🗄️ SQL</span>
+                        <span class="px-2.5 py-1 bg-cyan-950/40 border border-cyan-800 text-cyan-300 text-[10px] rounded-lg font-mono group-hover:border-purple-500/50 transition-colors">🌐 HTML/CSS/Tailwind</span>
+                    </div>
+                </div>
+
+                <!-- Bento 2: BA & QA -->
+                <div class="bento-3d-card md:col-span-2 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm hover:border-pink-400/60 hover:bg-pink-900/10 transition-colors duration-300 group shadow-lg">
+                    <h2 class="text-[10px] text-pink-500 font-bold mb-2 tracking-widest font-mono border-b border-white/5 pb-1 group-hover:border-pink-500/30">BA & QA</h2>
+                    <div class="text-[10px] text-gray-300 font-mono leading-relaxed mt-2 space-y-1">
+                        <p><span class="text-pink-400 font-bold">BA Skills:</span> Requirements, Use Case, User Stories, ERD, Activity Diagrams</p>
+                        <p><span class="text-pink-400 font-bold">BA Tools:</span> Draw.io, Figma, Visual Paradigm</p>
+                        <p><span class="text-pink-400 font-bold">QA/Testing:</span> Black/White-box, Test Case, Postman, JUnit, SonarQube</p>
+                    </div>
+                </div>
+
+                <!-- Bento 3: Tools & DB -->
+                <div class="bento-3d-card bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm hover:border-green-400/60 hover:bg-green-900/10 transition-colors duration-300 group shadow-lg">
+                    <h2 class="text-[10px] text-green-500 font-bold mb-2 tracking-widest font-mono border-b border-white/5 pb-1 group-hover:border-green-500/30">TOOLS & DB</h2>
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <div class="text-[10px] text-gray-300 font-mono space-y-1">
+                            <p class="text-green-400 font-bold mb-1 border-b border-green-500/20 inline-block">🛠️ DEV TOOLS</p>
+                            <p>• Git, GitHub</p>
+                            <p>• Maven, Tomcat</p>
+                            <p>• VS Code, NetBeans</p>
                         </div>
-                        
-                        <!-- Nút bấm Play/Pause -->
-                        <button id="play-btn" class="animate-pulse w-8 h-8 rounded-full bg-pink-600/20 border border-pink-500 flex items-center justify-center text-pink-400 hover:bg-pink-600/40 transition-all text-[10px] font-title">
-                            ▶
-                        </button>
+                        <div class="text-[10px] text-gray-300 font-mono space-y-1">
+                            <p class="text-green-400 font-bold mb-1 border-b border-green-500/20 inline-block">🗄️ DATABASE</p>
+                            <p>• MySQL, SQL Server</p>
+                            <p>• SSMS, Workbench</p>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Thanh Progress Bar hiển thị tiến độ bài hát -->
-                <div id="progress-container" class="w-full bg-gray-900 rounded-full h-1.5 overflow-hidden border border-purple-500/20 cursor-pointer">
-                    <div id="progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all duration-100" style="width: 0%;"></div>
+                <!-- Bento 4: Motto -->
+                <div class="bento-3d-card bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm hover:border-purple-400/60 hover:bg-purple-900/10 transition-colors duration-300 flex items-center justify-center relative overflow-hidden group shadow-lg">
+                    <div class="absolute -right-2 -top-2 text-6xl text-white/5 font-serif group-hover:text-purple-500/10 transition-colors">"</div>
+                    <p class="text-[11px] md:text-[12px] text-center text-gray-300 font-mono font-bold leading-relaxed italic z-10">
+                        "Bridge Business<br><span class="text-purple-400">&</span> Code"
+                    </p>
                 </div>
             </div>
 
-            <!-- BENTO 4: Social Links -->
-            <div class="grid grid-cols-2 gap-3">
-                <!-- Nút GitHub -->
-                <a href="https://github.com/MDuong2005" target="_blank" 
-                   class="bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/50 text-gray-300 hover:text-white font-title text-center py-3 rounded-2xl flex items-center justify-center space-x-2 transition-all duration-300 transform hover:-translate-y-1 text-[10px] md:text-[11px] shadow-lg">
-                    <span>🐙</span><span>GITHUB</span>
-                </a>
+            <!-- BOTTOM: Music Player & Contact Buttons with 3D Depth -->
+            <div class="space-y-3 transform-style-3d relative z-20" style="transform: translateZ(28px);">
+                <!-- Music Player Box -->
+                <div class="bg-purple-950/30 border border-purple-500/20 rounded-2xl p-3 flex flex-col justify-between space-y-2 text-left select-none shadow-lg">
+                    <!-- Thẻ audio liên kết trực tiếp tới file nhạc -->
+                    <audio id="audio-player" src="assets/noitachoem.mp3"></audio>
 
-                <!-- Nút Zalo -->
-                <a href="https://zalo.me/0979705956" target="_blank" 
-                   class="bg-white/5 hover:bg-white/10 border border-white/10 hover:border-blue-400/50 text-gray-300 hover:text-white font-title text-center py-3 rounded-2xl flex items-center justify-center space-x-2 transition-all duration-300 transform hover:-translate-y-1 text-[10px] md:text-[11px] shadow-lg">
-                    <span>💬</span><span>ZALO</span>
-                </a>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <!-- Ảnh đĩa nhạc xoay -->
+                            <img id="music-disk" src="assets/laptop.jpg" alt="Music Cover" class="w-10 h-10 rounded-full object-cover border border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]">
+                            <div>
+                                <p class="text-white text-sm font-semibold tracking-wide">Noi Ta Cho Em...</p>
+                                <p id="music-time" class="text-gray-400 text-xs font-mono">00:00 / 00:00</p>
+                            </div>
+                        </div>
 
-                <!-- Nút Gmail full width -->
-                <a href="https://mail.google.com/mail/?view=cm&fs=1&to=maid88391@gmail.com&su=Thư%20mời%20phỏng%20vấn%20-%20Vị%20trí%20Java/BA%20Intern&body=Chào%20Dương,%0A%0ABên%20anh/chị%20đã%20xem%20qua%20Portfolio%20độc%20đáo%20của%20em%20và%20rất%20ấn%20tượng.%20Anh/chị%20muốn%20mời%20em%20tham%20gia%20một%20buổi%20trao%20đổi%20phỏng%20vấn..." 
-                   target="_blank" 
-                   class="col-span-2 bg-gradient-to-r from-purple-600/80 to-pink-600/80 hover:from-purple-500 hover:to-pink-500 text-white font-title text-center py-3.5 rounded-2xl block transition-all duration-300 transform hover:-translate-y-1 shadow-lg text-[11px] md:text-[12px] border border-white/10">
-                    GMAIL
-                </a>
+                        <!-- Nút Play/Pause & Sóng nhạc -->
+                        <div class="flex items-center space-x-3">
+                            <!-- Sóng nhạc Động giả lập -->
+                            <div id="wave-container" class="flex items-end space-x-0.5 h-4 opacity-0 transition-opacity duration-300">
+                                <style>
+                                    @keyframes bounce-bar { 0%, 100% { height: 4px; } 50% { height: 16px; } }
+                                    .animate-bar { animation: bounce-bar 0.6s ease-in-out infinite; }
+                                </style>
+                                <div class="w-0.5 bg-pink-500 animate-bar" style="animation-delay: 0.1s"></div>
+                                <div class="w-0.5 bg-purple-500 animate-bar" style="animation-delay: 0.3s"></div>
+                                <div class="w-0.5 bg-pink-500 animate-bar" style="animation-delay: 0.5s"></div>
+                            </div>
+                            
+                            <!-- Nút bấm Play/Pause -->
+                            <button id="play-btn" class="animate-pulse w-8 h-8 rounded-full bg-pink-600/20 border border-pink-500 flex items-center justify-center text-pink-400 hover:bg-pink-600/40 transition-all text-[10px] font-title cursor-pointer">
+                                ▶
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 3D AUDIO VISUALIZER WIDGET (THREE.JS + WEB AUDIO API) -->
+                    <div class="relative w-full rounded-xl overflow-hidden border border-purple-500/30 bg-black/60 p-2 my-1 group transform-style-3d shadow-inner">
+                        <div class="flex items-center justify-between px-1 mb-1 text-[9px] font-mono text-purple-300">
+                            <span class="flex items-center gap-1.5">
+                                <span class="inline-block w-1.5 h-1.5 rounded-full bg-pink-500 animate-ping"></span>
+                                <span class="font-bold tracking-wider text-[8px] md:text-[9px] text-pink-300">💠 3D HOLOGRAPHIC CORE</span>
+                            </span>
+                            <span id="visualizer-hint" class="text-[8px] text-gray-400 font-mono">🖱️ Kéo xoay 3D • Nhấn Play để nhảy theo nhạc</span>
+                        </div>
+                        <canvas id="audio-visualizer-3d" class="w-full h-20 rounded-lg cursor-grab active:cursor-grabbing block bg-black/70 border border-purple-500/20"></canvas>
+                    </div>
+
+                    <!-- Thanh Progress Bar hiển thị tiến độ bài hát -->
+                    <div id="progress-container" class="w-full bg-gray-900 rounded-full h-1.5 overflow-hidden border border-purple-500/20 cursor-pointer">
+                        <div id="progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all duration-100" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- BENTO 4: Social Links với chiều sâu 3D -->
+                <div class="grid grid-cols-2 gap-3 transform-style-3d">
+                    <!-- Nút GitHub -->
+                    <a href="https://github.com/MDuong2005" target="_blank" 
+                       class="bento-3d-card bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-400/50 text-gray-300 hover:text-white font-title text-center py-3 rounded-2xl flex items-center justify-center space-x-2 transition-all duration-300 text-[10px] md:text-[11px] shadow-lg">
+                        <span>🐙</span><span>GITHUB</span>
+                    </a>
+
+                    <!-- Nút Zalo -->
+                    <a href="https://zalo.me/0979705956" target="_blank" 
+                       class="bento-3d-card bg-white/5 hover:bg-white/10 border border-white/10 hover:border-blue-400/50 text-gray-300 hover:text-white font-title text-center py-3 rounded-2xl flex items-center justify-center space-x-2 transition-all duration-300 text-[10px] md:text-[11px] shadow-lg">
+                        <span>💬</span><span>ZALO</span>
+                    </a>
+
+                    <!-- Nút Gmail full width -->
+                    <a href="https://mail.google.com/mail/?view=cm&fs=1&to=maid88391@gmail.com&su=Thư%20mời%20phỏng%20vấn%20-%20Vị%20trí%20Java/BA%20Intern&body=Chào%20Dương,%0A%0ABên%20anh/chị%20đã%20xem%20qua%20Portfolio%20độc%20đáo%20của%20em%20và%20rất%20ấn%20tượng.%20Anh/chị%20muốn%20mời%20em%20tham%20gia%20một%20buổi%20trao%20đổi%20phỏng%20vấn..." 
+                       target="_blank" 
+                       class="bento-3d-card col-span-2 bg-gradient-to-r from-purple-600/80 to-pink-600/80 hover:from-purple-500 hover:to-pink-500 text-white font-title text-center py-3.5 rounded-2xl block transition-all duration-300 shadow-lg text-[11px] md:text-[12px] border border-white/10">
+                        GMAIL
+                    </a>
+                </div>
             </div>
+
         </div>
+    </main>
 
-    </div>
-
-    <!-- Nhúng file xử lý logic JavaScript -->
+    <!-- Nhúng file xử lý logic JavaScript & 3D WebGL Engine -->
     <script src="script.js"></script>
 </body>
 </html>
